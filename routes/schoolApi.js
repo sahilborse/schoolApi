@@ -82,5 +82,8 @@ router.get('/listSchools', async (req, res) => {
 router.get("/school", (req, res) => {
     res.send("Kay mato ganesh bhai!");
 });
+router.get("/",(req,res)=>{
+    res.send("welcome, check the routes POST:/addSchool and GET:/listSchools?latitude:XXXX&longitude:XXXXX");
+})
 
 export default router;
