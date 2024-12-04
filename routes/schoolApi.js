@@ -1,6 +1,9 @@
+// Imports
 import express from 'express';
 import db from '../config/db.js';
 import haversine from 'haversine';
+
+// Middleware creation
 const router = express.Router();
 
 // Validation function
@@ -12,8 +15,9 @@ const validateSchoolData = (name, address, latitude, longitude) => {
     return null; 
 };
 
+
 // Add School 
-router.post('/addSchool', (req, res) => {
+router.post('/addSchool', async (req, res) => {
     const { name, address, latitude, longitude } = req.body;
 
     const validationError = validateSchoolData(name, address, latitude, longitude);
@@ -21,52 +25,62 @@ router.post('/addSchool', (req, res) => {
         return res.status(400).json({ error: validationError });
     }
 
-    const query = 'INSERT INTO schools (name, address, latitude, longitude) VALUES ($1, $2, $3, $4) RETURNING id';
-    const values = [name, address, latitude, longitude];
-
-    db.query(query, values, (err, results) => {
+    const query = 'INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)';
+    db.query(query, [name, address, latitude, longitude], (err, results) => {
         if (err) {
             console.error('Error inserting data:', err.message);
             return res.status(500).json({ error: 'Database insertion error' });
         }
-        res.status(201).json({ message: 'School added successfully', schoolId: results.rows[0].id });
+        res.status(201).json({ message: 'School added successfully', schoolId: results.insertId });
     });
+    // try {
+    //     const [results] = await db.execute(query, values);  // Execute the query
+    //     console.log("works");
+    //     console.log([results]);
+    //     res.status(201).json({ message: 'School added successfully', schoolId: results.insertId });  // Use insertId to get the new record's ID
+    // } catch (err) {
+    //     console.error('Error inserting data:', err.message);
+    //     res.status(500).json({ error: 'Database insertion error' });
+    // }
 });
 
+
 // List Schools
-router.get('/listSchools', (req, res) => {
+// List Schools
+router.get('/listSchools', async (req, res) => {
     const { latitude, longitude } = req.query;
 
-    // Validation
+    // Validation for latitude and longitude
     if (!latitude || !longitude) {
         return res.status(400).json({ error: 'Latitude and longitude are required.' });
     }
 
-    // Fetch all schools 
     const query = 'SELECT id, name, address, latitude, longitude FROM schools';
+    
     db.query(query, (err, results) => {
         if (err) {
             console.error('Error fetching schools:', err);
             return res.status(500).json({ error: 'Failed to fetch schools' });
         }
 
-        // proximity
+        // Calculate distances and sort schools by proximity
         const userLocation = { latitude: parseFloat(latitude), longitude: parseFloat(longitude) };
-        const schoolsWithDistances = results.rows.map((school) => {
+        const schoolsWithDistances = results.map((school) => { // Use `results` directly as an array
             const schoolLocation = { latitude: school.latitude, longitude: school.longitude };
             const distance = haversine(userLocation, schoolLocation, { unit: 'km' });
             return { ...school, distance };
         });
 
-        //  sort in ascending order
+        // Sort schools 
         schoolsWithDistances.sort((a, b) => a.distance - b.distance);
         res.json(schoolsWithDistances);
     });
 });
 
-// Test Route
+
+// Test
 router.get("/school", (req, res) => {
-    res.send("working perfectly1");
+    res.send("working perfectly!");
 });
 
 export default router;
