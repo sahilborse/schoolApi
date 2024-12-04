@@ -80,7 +80,7 @@ router.get('/listSchools', async (req, res) => {
 
 // Test
 router.get("/school", (req, res) => {
-    res.send("Kay mato ganesh bhai!");
+    res.send("Working Perfectly!");
 });
 router.get("/",(req,res)=>{
     res.send("welcome, check the routes POST:/addSchool and GET:/listSchools?latitude:XXXX&longitude:XXXXX");
