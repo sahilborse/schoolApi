@@ -15,7 +15,6 @@ const validateSchoolData = (name, address, latitude, longitude) => {
     return null; 
 };
 
-
 // Add School 
 router.post('/addSchool', async (req, res) => {
     const { name, address, latitude, longitude } = req.body;
@@ -26,26 +25,17 @@ router.post('/addSchool', async (req, res) => {
     }
 
     const query = 'INSERT INTO schools (name, address, latitude, longitude) VALUES (?, ?, ?, ?)';
-    db.query(query, [name, address, latitude, longitude], (err, results) => {
-        if (err) {
-            console.error('Error inserting data:', err.message);
-            return res.status(500).json({ error: 'Database insertion error' });
-        }
+    
+    try {
+        // Use db.promise() for async/await and promise-based query execution
+        const [results] = await db.promise().query(query, [name, address, latitude, longitude]);
         res.status(201).json({ message: 'School added successfully', schoolId: results.insertId });
-    });
-    // try {
-    //     const [results] = await db.execute(query, values);  // Execute the query
-    //     console.log("works");
-    //     console.log([results]);
-    //     res.status(201).json({ message: 'School added successfully', schoolId: results.insertId });  // Use insertId to get the new record's ID
-    // } catch (err) {
-    //     console.error('Error inserting data:', err.message);
-    //     res.status(500).json({ error: 'Database insertion error' });
-    // }
+    } catch (err) {
+        console.error('Error inserting data:', err.message);
+        res.status(500).json({ error: 'Database insertion error' });
+    }
 });
 
-
-// List Schools
 // List Schools
 router.get('/listSchools', async (req, res) => {
     const { latitude, longitude } = req.query;
@@ -57,15 +47,12 @@ router.get('/listSchools', async (req, res) => {
 
     const query = 'SELECT id, name, address, latitude, longitude FROM schools';
     
-    db.query(query, (err, results) => {
-        if (err) {
-            console.error('Error fetching schools:', err);
-            return res.status(500).json({ error: 'Failed to fetch schools' });
-        }
-
-        // Calculate distances and sort schools by proximity
+    try {
+        // Use db.promise() for async/await and promise-based query execution
+        const [results] = await db.promise().query(query);
+        
         const userLocation = { latitude: parseFloat(latitude), longitude: parseFloat(longitude) };
-        const schoolsWithDistances = results.map((school) => { // Use `results` directly as an array
+        const schoolsWithDistances = results.map((school) => { 
             const schoolLocation = { latitude: school.latitude, longitude: school.longitude };
             const distance = haversine(userLocation, schoolLocation, { unit: 'km' });
             return { ...school, distance };
@@ -74,9 +61,11 @@ router.get('/listSchools', async (req, res) => {
         // Sort schools 
         schoolsWithDistances.sort((a, b) => a.distance - b.distance);
         res.json(schoolsWithDistances);
-    });
+    } catch (err) {
+        console.error('Error fetching schools:', err);
+        res.status(500).json({ error: 'Failed to fetch schools' });
+    }
 });
-
 
 // Test
 router.get("/school", (req, res) => {
