@@ -80,7 +80,7 @@ router.get('/listSchools', async (req, res) => {
 
 // Test
 router.get("/school", (req, res) => {
-    res.send("working perfectly!");
+    res.send("Kay mato ganesh bhai!");
 });
 
 export default router;
